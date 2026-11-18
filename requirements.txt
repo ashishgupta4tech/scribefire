@@ -1,0 +1,28 @@
+# Scribefire runtime dependencies.
+#
+#   pip install -r requirements.txt
+#
+# vosk is only needed for the optional live preview.  It is listed last so a
+# missing install only disables that feature, never the app itself.
+
+# --- core dictation ---
+faster-whisper>=1.0.0        # local Whisper (CTranslate2), int8 on CPU
+numpy>=1.24                  # audio buffers
+sounddevice>=0.4.6          # microphone capture (PortAudio)
+
+# --- input / output ---
+pynput>=1.7.6                # global hotkey listener (key is not swallowed)
+pyperclip>=1.8.2             # clipboard round-trip for pasting
+
+# --- configuration ---
+platformdirs>=3.0            # per-OS config / cache / log directories
+
+# --- tray and settings ---
+pystray>=0.19.5              # system tray icon
+Pillow>=9.0                  # tray icon rendering
+
+# --- secrets ---
+keyring>=24.0                # API key in the OS keychain, never in the config
+
+# --- optional: live transcription preview ---
+vosk>=0.3.45                 # streaming preview model (CPU only)
