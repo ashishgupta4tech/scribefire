@@ -146,6 +146,19 @@ npm run preview # serve the export locally
 The build is a plain static export (`output: "export"` in `next.config.ts`), so
 `out/` can be deployed to any static host.
 
+### Pushing changes
+
+```bash
+git add -A
+git commit -m "what changed"
+git push origin main
+```
+
+**The push is the deploy.** A GitHub Actions workflow
+(`.github/workflows/deploy.yml`) rebuilds the site and publishes it to the
+server on every push — no manual upload step. See **[DEPLOY.md](DEPLOY.md)**
+for the one-time server setup and the domain/DNS steps.
+
 ---
 
 ## License
