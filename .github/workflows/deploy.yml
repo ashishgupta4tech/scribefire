@@ -1,0 +1,87 @@
+name: Deploy site
+
+# Every push to `main` rebuilds the site and publishes it. The build is a
+# plain static export (`output: "export"`), so the result is a folder of
+# static files that any host can serve.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (static export -> out/)
+        run: npm run build
+
+      - name: Upload the exported site
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: out/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------
+  # Publish to the server.
+  #
+  # The secrets below are repository settings (Settings -> Secrets and
+  # variables -> Actions), not values that live in this file:
+  #
+  #   DEPLOY_HOST        the server's hostname or IP
+  #   DEPLOY_USER        the SSH user (e.g. deploy)
+  #   DEPLOY_SSH_KEY     the private SSH key for that user
+  #   DEPLOY_PATH        the directory the site is served from
+  #
+  # See DEPLOY.md for the full one-time server setup.
+  # ---------------------------------------------------------------------
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ vars.DEPLOY_HOST != '' }}
+    steps:
+      - name: Download the exported site
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: out
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ vars.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload and activate
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p '$DEPLOY_PATH' && rm -rf '$DEPLOY_PATH'/*"
+          rsync -az --delete out/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            "sudo systemctl reload nginx || true"
