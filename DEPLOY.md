@@ -204,8 +204,8 @@ rewrite it, only the page routes.
 
 ## Domain notes
 
-`getlikhari.vercel.app` is the old address and still points at the previous
-deployment. To move the domain:
+The previous `*.vercel.app` address still points at the old deployment. To move
+the domain:
 
 - **Vercel** — in the project, add the custom domain under *Settings →
   Domains*, then update the DNS records it shows.
