@@ -190,8 +190,6 @@ ssh deploy@your-server-ip "sudo systemctl reload nginx"
 
 Because the output is static, these all work with no code changes:
 
-- **Vercel** — `npx vercel --prod`. Import the GitHub repo instead and every
-  push deploys automatically. The current site already runs this way.
 - **Cloudflare Pages** — connect the repo, build command `npm run build`,
   output directory `out`.
 - **Netlify / GitHub Pages / S3+CloudFront / nginx** — all just need the
@@ -202,10 +200,42 @@ rewrite it, only the page routes.
 
 ---
 
-## Domain notes
+## Vercel (the live setup)
 
-The previous `*.vercel.app` address still points at the old deployment. To move
-the domain:
+The site runs on Vercel at **https://scribefire.vercel.app**, deployed from
+this repository.
+
+| Setting | Value |
+|---|---|
+| Project | `scribefire` (team `4-tech2`) |
+| Framework preset | `nextjs` |
+| Build command | `npm run build` (the default) |
+| Output directory | leave empty — Vercel picks up `out/` on its own |
+| Node.js | `22.x` |
+| Git link | `github.com/ashishgupta4tech/scribefire`, production branch `main` |
+
+> **Do not set the output directory to `out`.** Vercel's Next.js preset looks
+> for the framework's own build manifest (`.next/routes-manifest.json`); forcing
+> `out` makes the build fail with
+> *"The file out/routes-manifest.json couldn't be found"*. `next.config.ts`
+> already sets `output: "export"`, so Vercel serves the exported folder by
+> itself.
+
+Every push to `main` deploys automatically — no manual step:
+
+```bash
+git push origin main
+```
+
+To deploy by hand instead:
+
+```bash
+vercel --prod
+```
+
+---
+
+## Domain notes
 
 - **Vercel** — in the project, add the custom domain under *Settings →
   Domains*, then update the DNS records it shows.
