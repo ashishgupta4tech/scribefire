@@ -42,6 +42,7 @@ export default function Home() {
             <p className="mt-8 max-w-lg text-lg font-light leading-relaxed text-[var(--fg-muted)]">
               Scribefire turns your voice into clean, formatted writing, in any app on your
               machine. Hold a key, say what you mean, let go. No tab switching. No cleanup.
+              AUTODEPLOY-PROBE-9274
             </p>
 
             <div className="mt-10 flex flex-col gap-5 sm:flex-row sm:items-center">
