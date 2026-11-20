@@ -8,5 +8,6 @@ __pycache__/
 venv/
 .env
 .env.local
+.vercel
 .DS_Store
 *.log
