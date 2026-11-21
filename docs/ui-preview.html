@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scribefire — UI preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fafafa; --surface:#ffffff; --line:#e4e4e7; --line-soft:#f4f4f5;
+    --ink:#18181b; --muted:#71717a; --faint:#a1a1aa;
+    --accent:#f59e0b; --accent-soft:rgba(245,158,11,.10);
+    --radius:14px;
+    --shadow:0 2px 8px rgba(0,0,0,.04);
+    --shadow-lg:0 8px 30px -8px rgba(0,0,0,.14);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Outfit',sans-serif; font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 24px 96px}
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:34px}
+  h1{font-size:27px;font-weight:600;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--muted);margin:0;max-width:58ch;font-size:15px}
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--muted);
+    font-family:'JetBrains Mono',monospace;box-shadow:var(--shadow);white-space:nowrap;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .badge.ok .dot{background:#10b981}
+  .badge.bad .dot{background:#f43f5e}
+  section{margin-bottom:44px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .sec-head svg{color:var(--accent)}
+  h2{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:0}
+  .sec-note{color:var(--muted);margin:0 0 18px;font-size:14px;max-width:70ch}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+  /* ---------- overlay stage ---------- */
+  .stage-wrap{display:grid;grid-template-columns:1fr 268px;gap:18px}
+  @media(max-width:900px){.stage-wrap{grid-template-columns:1fr}}
+  .stage{
+    position:relative;border-radius:var(--radius);border:1px solid var(--line);
+    min-height:330px;display:flex;align-items:flex-end;justify-content:center;
+    padding:0 0 26px;overflow:hidden;background:#fff;
+    transition:background .35s ease,border-color .35s ease;
+  }
+  .stage.dark{background:#15171d;border-color:#2a2d36}
+  .stage-grid{
+    position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(0,0,0,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(0,0,0,.045) 1px,transparent 1px);
+    background-size:28px 28px;
+  }
+  .stage.dark .stage-grid{
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  }
+  .stage-label{
+    position:absolute;top:14px;left:16px;font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;color:var(--faint);letter-spacing:.04em;
+  }
+  .stage.dark .stage-label{color:#525660}
+  #hud{position:relative;z-index:2;display:block;image-rendering:auto}
+  .hud-caption{
+    position:absolute;bottom:8px;left:0;right:0;text-align:center;
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);
+  }
+  .stage.dark .hud-caption{color:#525660}
+
+  /* ---------- controls ---------- */
+  .panel{padding:16px 16px 18px}
+  .ctl{margin-bottom:16px}
+  .ctl:last-child{margin-bottom:0}
+  .ctl-label{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--faint);margin-bottom:8px;font-weight:600;
+  }
+  .seg{display:flex;background:var(--line-soft);border-radius:9px;padding:3px;gap:3px}
+  .seg button{
+    flex:1;border:0;background:transparent;font-family:inherit;font-size:13px;color:var(--muted);
+    padding:6px 8px;border-radius:7px;cursor:pointer;transition:.16s;
+  }
+  .seg button:hover{color:var(--ink)}
+  .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .switch{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px}
+  .toggle{position:relative;width:38px;height:22px;border-radius:999px;background:var(--line);border:0;cursor:pointer;transition:.18s;flex:none}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:.18s}
+  .toggle[aria-pressed="true"]{background:var(--accent)}
+  .toggle[aria-pressed="true"]::after{transform:translateX(16px)}
+  .spec{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)}
+  .spec div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+  .spec div:last-child{border-bottom:0}
+  .spec span:last-child{color:var(--ink)}
+  .swatch-row{display:flex;gap:8px;margin-top:4px}
+  .swatch{flex:1;text-align:center}
+  .swatch i{display:block;height:26px;border-radius:7px;border:1px solid var(--line);margin-bottom:5px}
+  .swatch b{font-size:10.5px;font-weight:500;color:var(--faint);font-family:'JetBrains Mono',monospace}
+
+  /* ---------- settings window mock ---------- */
+  .window{border-radius:12px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-lg);overflow:hidden;max-width:720px}
+  .titlebar{
+    display:flex;align-items:center;gap:10px;padding:11px 14px;background:#f4f4f5;
+    border-bottom:1px solid var(--line);
+  }
+  .titlebar h3{margin:0;font-size:14px;font-weight:600}
+  .titlebar .spacer{flex:1}
+  .win-dot{width:11px;height:11px;border-radius:50%;background:#d4d4d8}
+  .win-body{padding:18px 20px 20px}
+  .group{margin-bottom:20px}
+  .group > h4{
+    font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);
+    margin:0 0 11px;font-weight:600;padding-bottom:7px;border-bottom:1px solid var(--line);
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 0;min-height:34px}
+  .row label{font-size:14px;flex:none;width:150px}
+  .field{
+    flex:1;font-family:inherit;font-size:13.5px;padding:7px 10px;border:1px solid var(--line);
+    border-radius:8px;background:var(--bg);color:var(--ink);min-width:0;
+  }
+  .field:disabled{color:var(--faint);background:var(--line-soft)}
+  .fake-select{
+    flex:1;font-size:13.5px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;
+    background:var(--bg);display:flex;justify-content:space-between;color:var(--ink);
+  }
+  .fake-select em{font-style:normal;color:var(--faint)}
+  .hint{font-size:12px;color:var(--faint);margin-top:3px}
+  .tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 7px;border-radius:5px;background:var(--line-soft);color:var(--muted)}
+  table.dict{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.dict th{
+    text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);
+    font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);
+  }
+  table.dict td{padding:7px 8px;border-bottom:1px solid var(--line-soft)}
+  table.dict td:first-child{color:var(--muted)}
+  .btnrow{display:flex;gap:8px;margin-top:4px}
+  .btn{
+    font-family:inherit;font-size:13.5px;padding:7px 14px;border-radius:8px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);cursor:pointer;transition:.16s;
+  }
+  .btn:hover:not(:disabled){border-color:var(--faint);background:var(--bg)}
+  .btn:disabled{color:var(--faint);cursor:not-allowed;opacity:.65}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.primary:hover:not(:disabled){background:#000}
+  .btn.primary:disabled{background:var(--line);border-color:var(--line);color:var(--faint)}
+  .foot{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding-top:14px;border-top:1px solid var(--line);
+  }
+  .words{font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .dirty{font-size:12.5px;color:#b45309;opacity:0;transition:.2s;font-weight:500}
+  .dirty.on{opacity:1}
+  .toast{
+    font-size:12.5px;color:#059669;opacity:0;transition:.2s;font-weight:500;
+  }
+  .toast.on{opacity:1}
+
+  .note{
+    margin-top:14px;font-size:13.5px;color:var(--muted);display:flex;gap:9px;align-items:flex-start;
+  }
+  .note svg{flex:none;margin-top:2px;color:var(--accent)}
+
+  /* ---------- tokens ---------- */
+  .tokens{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+  .token{padding:16px}
+  .token h4{margin:0 0 12px;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .kv{display:grid;grid-template-columns:1fr auto;gap:7px 12px;font-size:13px}
+  .kv span{color:var(--muted)}
+  .kv b{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Scribefire — UI preview</h1>
+      <p class="sub">The dictation overlay and the settings window, rendered from the same geometry module the desktop app uses. Nothing here is a mock-up: the wave maths below is the app's maths.</p>
+    </div>
+    <div class="badge" id="parityBadge"><i class="dot"></i><span id="parityText">checking geometry parity…</span></div>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+      <h2>The overlay</h2>
+    </div>
+    <p class="sec-note">Bottom-centre of the screen, exactly as it appears while you hold the hotkey. Toggle the state to see the pen lift and the stroke pulse while Whisper works. Switch the stage to dark to check the translucent plate for a halo.</p>
+
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <div class="stage-grid"></div>
+        <div class="stage-label" id="stageLabel">LIGHT BACKGROUND</div>
+        <canvas id="hud"></canvas>
+        <div class="hud-caption" id="hudCaption">140 × 44 px · bottom-centre · shown at 2×</div>
+      </div>
+
+      <div class="card panel">
+        <div class="ctl">
+          <div class="ctl-label"><span>State</span></div>
+          <div class="seg" id="stateSeg">
+            <button data-state="listening" aria-pressed="true">Listening</button>
+            <button data-state="processing" aria-pressed="false">Processing</button>
+            <button data-state="done" aria-pressed="false">Done</button>
+          </div>
+        </div>
+        <div class="ctl">
+          <div class="ctl-label"><span>Microphone</span></div>
+          <div class="seg" id="srcSeg">
+            <button data-src="silence" aria-pressed="false">Silent</button>
+            <button data-src="speech" aria-pressed="true">Speech</button>
+            <button data-src="loud" aria-pressed="false">Loud</button>
+          </div>
+        </div>
+        <div class="ctl">
+          <div class="ctl-label"><span>Live preview</span><span class="spec" id="sizeLabel">140×44</span></div>
+          <div class="switch">
+            <span style="font-size:14px;color:var(--muted)">Show the preview line</span>
+            <button class="toggle" id="previewToggle" aria-pressed="false" aria-label="Toggle live preview"></button>
+          </div>
+        </div>
+        <div class="ctl">
+          <div class="ctl-label"><span>Stage</span></div>
+          <div class="seg" id="bgSeg">
+            <button data-bg="light" aria-pressed="true">Light</button>
+            <button data-bg="dark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+        <div class="ctl">
+          <div class="ctl-label"><span>Measured</span></div>
+          <div class="spec">
+            <div><span>Wave samples</span><span id="tSamples">80</span></div>
+            <div><span>RMS reference</span><span id="tRef">0.12</span></div>
+            <div><span>Redraw cap</span><span id="tFps">30 fps</span></div>
+            <div><span>Text redraw</span><span id="tTextFps">15 fps</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <span>A flat line means silence — that is deliberate, not a bug: the line is a live microphone diagnostic, so no amplitude floor is applied. On Windows the plate uses colour-key transparency, so the background shows through without a rectangle or halo.</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <h2>The settings window</h2>
+    </div>
+    <p class="sec-note">One Tk window for both platforms, reachable from the tray. Change any field to see the dirty-tracking behaviour: Save and Cancel stay disabled until something actually changes, and the footer says so.</p>
+
+    <div class="window">
+      <div class="titlebar">
+        <i class="win-dot"></i><i class="win-dot"></i><i class="win-dot"></i>
+        <h3>Scribefire Settings</h3><div class="spacer"></div>
+        <span class="tag">right alt</span>
+      </div>
+      <div class="win-body">
+
+        <div class="group">
+          <h4>General</h4>
+          <div class="row"><label for="f-hotkey">Hotkey</label><div class="fake-select" id="f-hotkey">Right Alt <em>▾</em></div></div>
+          <div class="row"><label for="f-preroll">Pre-roll</label><div style="flex:1"><input class="field" id="f-preroll" type="text" value="500 ms"></div></div>
+          <div class="row"><label>Overlay</label><div class="switch"><span style="font-size:13.5px;color:var(--muted)">Show the HUD while dictating</span><button class="toggle" aria-pressed="true" data-toggle="hud"></button></div></div>
+          <div class="row"><label>Live preview</label><div class="switch"><span style="font-size:13.5px;color:var(--muted)">Streaming text on the overlay</span><button class="toggle" aria-pressed="false" data-toggle="preview"></button></div></div>
+          <div class="row"><label>Start on login</label><div class="switch"><span style="font-size:13.5px;color:var(--muted)">Launch Scribefire when you sign in</span><button class="toggle" aria-pressed="false" data-toggle="login"></button></div></div>
+        </div>
+
+        <div class="group">
+          <h4>Transcription</h4>
+          <div class="row"><label for="f-mic">Microphone</label><div class="fake-select" id="f-mic">Microphone Array (Intel) <em>▾</em></div></div>
+          <div class="row"><label for="f-model">Whisper model</label><div style="flex:1"><div class="fake-select" id="f-model">base <em>▾</em></div><div class="hint">145 MB · downloaded</div></div></div>
+          <div class="row"><label>Device</label><div style="flex:1"><div class="fake-select" style="background:var(--line-soft);color:var(--muted)">CPU — read only</div></div></div>
+        </div>
+
+        <div class="group">
+          <h4>Cleanup</h4>
+          <div class="row"><label for="f-tier">Tier</label><div class="fake-select" id="f-tier">Automatic (failover) <em>▾</em></div></div>
+          <div class="row"><label for="f-groq">Groq model</label><input class="field" id="f-groq" value="openai/gpt-oss-20b"></div>
+          <div class="row"><label for="f-ollama">Ollama model</label><input class="field" id="f-ollama" value="llama3.2:3b"></div>
+          <div class="row"><label for="f-key">API key</label><input class="field" id="f-key" type="password" value="sk-3f9a2b7c1d4e5f608192a3b4c5d6e7f80"></div>
+          <div class="row"><label></label><div class="btnrow"><button class="btn" id="testBtn">Test connection</button></div><div class="hint" id="testResult" style="flex:1"></div></div>
+        </div>
+
+        <div class="group">
+          <h4>Dictionary</h4>
+          <table class="dict">
+            <thead><tr><th style="width:50%">Heard</th><th>Should be</th></tr></thead>
+            <tbody id="dictBody">
+              <tr><td>pie torch</td><td>PyTorch</td></tr>
+              <tr><td>cloud</td><td>Claude</td></tr>
+              <tr><td>zero flow</td><td>ZeroFlow</td></tr>
+            </tbody>
+          </table>
+          <div class="btnrow" style="margin-top:10px"><button class="btn">Add</button><button class="btn">Edit</button><button class="btn">Delete</button></div>
+        </div>
+
+        <div class="foot">
+          <div class="words">Words today: 128 &nbsp;·&nbsp; Words total: 4,021</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <span class="dirty" id="dirtyLabel">Unsaved changes</span>
+            <span class="toast" id="savedToast">Saved</span>
+            <div class="btnrow" style="margin:0">
+              <button class="btn" id="cancelBtn" disabled>Cancel</button>
+              <button class="btn primary" id="saveBtn" disabled>Save</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="note">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      <span>Closing with unsaved changes asks Save, Discard or Cancel — the same prompt appears for Escape. Cmd+S on macOS and Ctrl+S on Windows save. The API key never touches the config file: it is written to the OS keychain.</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <h2>Design tokens</h2>
+    </div>
+    <p class="sec-note">The numbers both platform backends read from <code>scribefire/hud_common.py</code> — one module, so the wave maths is never written twice.</p>
+
+    <div class="tokens">
+      <div class="card token">
+        <h4>Overlay</h4>
+        <div class="kv">
+          <span>Compact size</span><b id="kCompact">140×44</b>
+          <span>With preview</span><b id="kExpanded">420×96</b>
+          <span>Corner radius</span><b id="kRadius">10</b>
+          <span>Wave strip</span><b id="kWave">34 / 44</b>
+          <span>Text line</span><b id="kText">26</b>
+        </div>
+      </div>
+      <div class="card token">
+        <h4>Ink</h4>
+        <div class="swatch-row" id="swatches"></div>
+        <div class="kv" style="margin-top:14px">
+          <span>Thickness</span><b id="kThick">1.1 → 2.6</b>
+          <span>RMS reference</span><b id="kRef2">0.12</b>
+          <span>Nib</span><b id="kNib">4×13</b>
+        </div>
+      </div>
+      <div class="card token">
+        <h4>Timing</h4>
+        <div class="kv">
+          <span>Redraw cap</span><b id="kFps">30 fps</b>
+          <span>Text redraw cap</span><b id="kTextFps2">15 fps</b>
+          <span>Fade out</span><b id="kFade">0.45 s</b>
+          <span>Pulse period</span><b id="kPulse">1.1 s</b>
+          <span>Minimum dictation</span><b>300 ms</b>
+          <span>Pre-roll window</span><b>500 ms</b>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script id="fixture" type="application/json">{"constants":{"WAVE_SAMPLES":80,"COMPACT_SIZE":[140,40],"EXPANDED_SIZE":[420,84],"WAVE_HEIGHT_COMPACT":34,"WAVE_HEIGHT_EXPANDED":44,"TEXT_HEIGHT":26,"CORNER_RADIUS":10,"WAVE_REFERENCE_RMS":0.12,"WAVE_THICKNESS_MIN":1.1,"WAVE_THICKNESS_MAX":2.6,"NIB_MARGIN":10.0,"NIB_WIDTH":4.0,"NIB_HEIGHT":13.0,"REDRAW_FPS":30,"TEXT_FPS":15,"FADE_OUT_SECONDS":0.45,"PROCESSING_PULSE_SECONDS":1.1,"INK_COLOR":[233,240,255,235],"INK_DIM_COLOR":[170,185,215,200],"NIB_COLOR":[255,214,140,255],"BACKGROUND_COLOR":[16,18,26,215],"PREVIEW_TEXT_COLOR":[226,232,245,165],"PREVIEW_TEXT_FONT_SIZE":12},"buffers":{"silence":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"speech":[0.011,0.014707,0.018586,0.022604,0.026729,0.030926,0.035155,0.039379,0.043556,0.047643,0.0516,0.055383,0.05895,0.06226,0.065274,0.067953,0.070261,0.072166,0.073637,0.074647,0.075175,0.075201,0.07471,0.073694,0.072148,0.070072,0.067472,0.064357,0.060745,0.056654,0.052111,0.047147,0.041796,0.036097,0.030093,0.023831,0.01736,0.011268,0.017998,0.024774,0.031539,0.038236,0.044807,0.051194,0.057341,0.063195,0.068704,0.073817,0.07849,0.082679,0.086347,0.08946,0.09199,0.093912,0.095209,0.095868,0.095884,0.095253,0.093983,0.092084,0.089571,0.086467,0.0828,0.078602,0.073909,0.068763,0.06321,0.057297,0.051078,0.044606,0.037937,0.031129,0.024239,0.017327,0.011549,0.018332,0.024966,0.031397,0.037575,0.04345],"loud":[0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2]},"expected":{"silence_compact":{"points":[[0.0,20.0,1.1],[1.7722,20.0,1.1],[3.5443,20.0,1.1],[5.3165,20.0,1.1],[7.0886,20.0,1.1],[8.8608,20.0,1.1],[10.6329,20.0,1.1],[12.4051,20.0,1.1],[14.1772,20.0,1.1],[15.9494,20.0,1.1],[17.7215,20.0,1.1],[19.4937,20.0,1.1],[21.2658,20.0,1.1],[23.038,20.0,1.1],[24.8101,20.0,1.1],[26.5823,20.0,1.1],[28.3544,20.0,1.1],[30.1266,20.0,1.1],[31.8987,20.0,1.1],[33.6709,20.0,1.1],[35.443,20.0,1.1],[37.2152,20.0,1.1],[38.9873,20.0,1.1],[40.7595,20.0,1.1],[42.5316,20.0,1.1],[44.3038,20.0,1.1],[46.0759,20.0,1.1],[47.8481,20.0,1.1],[49.6203,20.0,1.1],[51.3924,20.0,1.1],[53.1646,20.0,1.1],[54.9367,20.0,1.1],[56.7089,20.0,1.1],[58.481,20.0,1.1],[60.2532,20.0,1.1],[62.0253,20.0,1.1],[63.7975,20.0,1.1],[65.5696,20.0,1.1],[67.3418,20.0,1.1],[69.1139,20.0,1.1],[70.8861,20.0,1.1],[72.6582,20.0,1.1],[74.4304,20.0,1.1],[76.2025,20.0,1.1],[77.9747,20.0,1.1],[79.7468,20.0,1.1],[81.519,20.0,1.1],[83.2911,20.0,1.1],[85.0633,20.0,1.1],[86.8354,20.0,1.1],[88.6076,20.0,1.1],[90.3797,20.0,1.1],[92.1519,20.0,1.1],[93.9241,20.0,1.1],[95.6962,20.0,1.1],[97.4684,20.0,1.1],[99.2405,20.0,1.1],[101.0127,20.0,1.1],[102.7848,20.0,1.1],[104.557,20.0,1.1],[106.3291,20.0,1.1],[108.1013,20.0,1.1],[109.8734,20.0,1.1],[111.6456,20.0,1.1],[113.4177,20.0,1.1],[115.1899,20.0,1.1],[116.962,20.0,1.1],[118.7342,20.0,1.1],[120.5063,20.0,1.1],[122.2785,20.0,1.1],[124.0506,20.0,1.1],[125.8228,20.0,1.1],[127.5949,20.0,1.1],[129.3671,20.0,1.1],[131.1392,20.0,1.1],[132.9114,20.0,1.1],[134.6835,20.0,1.1],[136.4557,20.0,1.1],[138.2278,20.0,1.1],[140.0,20.0,1.1]],"nib":[130.0,20.0]},"silence_expanded":{"points":[[0.0,42.0,1.1],[5.3165,42.0,1.1],[10.6329,42.0,1.1],[15.9494,42.0,1.1],[21.2658,42.0,1.1],[26.5823,42.0,1.1],[31.8987,42.0,1.1],[37.2152,42.0,1.1],[42.5316,42.0,1.1],[47.8481,42.0,1.1],[53.1646,42.0,1.1],[58.481,42.0,1.1],[63.7975,42.0,1.1],[69.1139,42.0,1.1],[74.4304,42.0,1.1],[79.7468,42.0,1.1],[85.0633,42.0,1.1],[90.3797,42.0,1.1],[95.6962,42.0,1.1],[101.0127,42.0,1.1],[106.3291,42.0,1.1],[111.6456,42.0,1.1],[116.962,42.0,1.1],[122.2785,42.0,1.1],[127.5949,42.0,1.1],[132.9114,42.0,1.1],[138.2278,42.0,1.1],[143.5443,42.0,1.1],[148.8608,42.0,1.1],[154.1772,42.0,1.1],[159.4937,42.0,1.1],[164.8101,42.0,1.1],[170.1266,42.0,1.1],[175.443,42.0,1.1],[180.7595,42.0,1.1],[186.0759,42.0,1.1],[191.3924,42.0,1.1],[196.7089,42.0,1.1],[202.0253,42.0,1.1],[207.3418,42.0,1.1],[212.6582,42.0,1.1],[217.9747,42.0,1.1],[223.2911,42.0,1.1],[228.6076,42.0,1.1],[233.9241,42.0,1.1],[239.2405,42.0,1.1],[244.557,42.0,1.1],[249.8734,42.0,1.1],[255.1899,42.0,1.1],[260.5063,42.0,1.1],[265.8228,42.0,1.1],[271.1392,42.0,1.1],[276.4557,42.0,1.1],[281.7722,42.0,1.1],[287.0886,42.0,1.1],[292.4051,42.0,1.1],[297.7215,42.0,1.1],[303.038,42.0,1.1],[308.3544,42.0,1.1],[313.6709,42.0,1.1],[318.9873,42.0,1.1],[324.3038,42.0,1.1],[329.6203,42.0,1.1],[334.9367,42.0,1.1],[340.2532,42.0,1.1],[345.5696,42.0,1.1],[350.8861,42.0,1.1],[356.2025,42.0,1.1],[361.519,42.0,1.1],[366.8354,42.0,1.1],[372.1519,42.0,1.1],[377.4684,42.0,1.1],[382.7848,42.0,1.1],[388.1013,42.0,1.1],[393.4177,42.0,1.1],[398.7342,42.0,1.1],[404.0506,42.0,1.1],[409.3671,42.0,1.1],[414.6835,42.0,1.1],[420.0,42.0,1.1]],"nib":[410.0,42.0]},"speech_compact":{"points":[[0.0,16.3611,1.4173],[1.7722,15.6051,1.4833],[3.5443,14.8828,1.5463],[5.3165,14.1886,1.6068],[7.0886,13.5196,1.6651],[8.8608,12.8752,1.7213],[10.6329,12.2562,1.7753],[12.4051,11.6635,1.827],[14.1772,11.0989,1.8763],[15.9494,10.5646,1.9229],[17.7215,10.0624,1.9667],[19.4937,9.5947,2.0074],[21.2658,9.1638,2.045],[23.038,8.7722,2.0792],[24.8101,8.4218,2.1097],[26.5823,8.1151,2.1365],[28.3544,7.8542,2.1592],[30.1266,7.6412,2.1778],[31.8987,7.478,2.192],[33.6709,7.3666,2.2017],[35.443,7.3086,2.2068],[37.2152,7.3058,2.2071],[38.9873,7.3597,2.2024],[40.7595,7.4717,2.1926],[42.5316,7.6432,2.1776],[44.3038,7.8755,2.1574],[46.0759,8.1698,2.1317],[47.8481,8.5278,2.1005],[49.6203,8.9505,2.0636],[51.3924,9.4401,2.0209],[53.1646,9.9985,1.9722],[54.9367,10.6286,1.9173],[56.7089,11.3344,1.8557],[58.481,12.122,1.787],[60.2532,13.0006,1.7104],[62.0253,13.9855,1.6245],[63.7975,15.1048,1.5269],[65.5696,16.3038,1.4223],[67.3418,14.9886,1.537],[69.1139,13.8318,1.6379],[70.8861,12.7837,1.7293],[72.6582,11.8216,1.8132],[74.4304,10.9336,1.8907],[76.2025,10.1133,1.9622],[77.9747,9.357,2.0282],[79.7468,8.6628,2.0887],[81.519,8.0299,2.1439],[83.2911,7.4581,2.1938],[85.0633,6.9476,2.2383],[86.8354,6.499,2.2774],[88.6076,6.1126,2.3111],[90.3797,5.7892,2.3393],[92.1519,5.5292,2.362],[93.9241,5.3334,2.3791],[95.6962,5.2021,2.3905],[97.4684,5.1356,2.3963],[99.2405,5.1339,2.3965],[101.0127,5.1976,2.3909],[102.7848,5.3262,2.3797],[104.557,5.5196,2.3628],[106.3291,5.7777,2.3403],[108.1013,6.1,2.3122],[109.8734,6.4861,2.2785],[111.6456,6.9355,2.2393],[113.4177,7.448,2.1947],[115.1899,8.0232,2.1445],[116.962,8.6611,2.0889],[118.7342,9.3623,2.0277],[120.5063,10.1278,1.9609],[122.2785,10.96,1.8884],[124.0506,11.8632,1.8096],[125.8228,12.8449,1.724],[127.5949,13.9187,1.6303],[129.3671,15.1109,1.5264],[131.1392,16.2441,1.4275],[132.9114,14.9284,1.5423],[134.6835,13.8008,1.6406],[136.4557,12.8049,1.7275],[138.2278,11.9138,1.8052],[140.0,11.113,1.875]],"nib":[130.0,11.113]},"speech_expanded":{"points":[[0.0,34.3584,1.4173],[5.3165,32.7707,1.4833],[10.6329,31.2539,1.5463],[15.9494,29.7961,1.6068],[21.2658,28.3912,1.6651],[26.5823,27.038,1.7213],[31.8987,25.7381,1.7753],[37.2152,24.4934,1.827],[42.5316,23.3078,1.8763],[47.8481,22.1857,1.9229],[53.1646,21.131,1.9667],[58.481,20.1488,2.0074],[63.7975,19.2441,2.045],[69.1139,18.4215,2.0792],[74.4304,17.6857,2.1097],[79.7468,17.0417,2.1365],[85.0633,16.4939,2.1592],[90.3797,16.0465,2.1778],[95.6962,15.7038,2.192],[101.0127,15.47,2.2017],[106.3291,15.3481,2.2068],[111.6456,15.3421,2.2071],[116.962,15.4554,2.2024],[122.2785,15.6906,2.1926],[127.5949,16.0507,2.1776],[132.9114,16.5385,2.1574],[138.2278,17.1566,2.1317],[143.5443,17.9083,2.1005],[148.8608,18.7961,2.0636],[154.1772,19.8242,2.0209],[159.4937,20.9969,1.9722],[164.8101,22.32,1.9173],[170.1266,23.8023,1.8557],[175.443,25.4562,1.787],[180.7595,27.3012,1.7104],[186.0759,29.3694,1.6245],[191.3924,31.7201,1.5269],[196.7089,34.2379,1.4223],[202.0253,31.4761,1.537],[207.3418,29.0468,1.6379],[212.6582,26.8459,1.7293],[217.9747,24.8254,1.8132],[223.2911,22.9605,1.8907],[228.6076,21.2379,1.9622],[233.9241,19.6498,2.0282],[239.2405,18.192,2.0887],[244.557,16.8627,2.1439],[249.8734,15.6621,2.1938],[255.1899,14.59,2.2383],[260.5063,13.6478,2.2774],[265.8228,12.8364,2.3111],[271.1392,12.1573,2.3393],[276.4557,11.6114,2.362],[281.7722,11.2001,2.3791],[287.0886,10.9243,2.3905],[292.4051,10.7847,2.3963],[297.7215,10.7813,2.3965],[303.038,10.915,2.3909],[308.3544,11.185,2.3797],[313.6709,11.5912,2.3628],[318.9873,12.1332,2.3403],[324.3038,12.8101,2.3122],[329.6203,13.6208,2.2785],[334.9367,14.5646,2.2393],[340.2532,15.6407,2.1947],[345.5696,16.8487,2.1445],[350.8861,18.1883,2.0889],[356.2025,19.6609,2.0277],[361.519,21.2684,1.9609],[366.8354,23.0161,1.8884],[372.1519,24.9128,1.8096],[377.4684,26.9742,1.724],[382.7848,29.2293,1.6303],[388.1013,31.7328,1.5264],[393.4177,34.1126,1.4275],[398.7342,31.3496,1.5423],[404.0506,28.9816,1.6406],[409.3671,26.8903,1.7275],[414.6835,25.019,1.8052],[420.0,23.3374,1.875]],"nib":[410.0,23.3374]},"loud_compact":{"points":[[0.0,2.8,2.6],[1.7722,2.8,2.6],[3.5443,2.8,2.6],[5.3165,2.8,2.6],[7.0886,2.8,2.6],[8.8608,2.8,2.6],[10.6329,2.8,2.6],[12.4051,2.8,2.6],[14.1772,2.8,2.6],[15.9494,2.8,2.6],[17.7215,2.8,2.6],[19.4937,2.8,2.6],[21.2658,2.8,2.6],[23.038,2.8,2.6],[24.8101,2.8,2.6],[26.5823,2.8,2.6],[28.3544,2.8,2.6],[30.1266,2.8,2.6],[31.8987,2.8,2.6],[33.6709,2.8,2.6],[35.443,2.8,2.6],[37.2152,2.8,2.6],[38.9873,2.8,2.6],[40.7595,2.8,2.6],[42.5316,2.8,2.6],[44.3038,2.8,2.6],[46.0759,2.8,2.6],[47.8481,2.8,2.6],[49.6203,2.8,2.6],[51.3924,2.8,2.6],[53.1646,2.8,2.6],[54.9367,2.8,2.6],[56.7089,2.8,2.6],[58.481,2.8,2.6],[60.2532,2.8,2.6],[62.0253,2.8,2.6],[63.7975,2.8,2.6],[65.5696,2.8,2.6],[67.3418,2.8,2.6],[69.1139,2.8,2.6],[70.8861,2.8,2.6],[72.6582,2.8,2.6],[74.4304,2.8,2.6],[76.2025,2.8,2.6],[77.9747,2.8,2.6],[79.7468,2.8,2.6],[81.519,2.8,2.6],[83.2911,2.8,2.6],[85.0633,2.8,2.6],[86.8354,2.8,2.6],[88.6076,2.8,2.6],[90.3797,2.8,2.6],[92.1519,2.8,2.6],[93.9241,2.8,2.6],[95.6962,2.8,2.6],[97.4684,2.8,2.6],[99.2405,2.8,2.6],[101.0127,2.8,2.6],[102.7848,2.8,2.6],[104.557,2.8,2.6],[106.3291,2.8,2.6],[108.1013,2.8,2.6],[109.8734,2.8,2.6],[111.6456,2.8,2.6],[113.4177,2.8,2.6],[115.1899,2.8,2.6],[116.962,2.8,2.6],[118.7342,2.8,2.6],[120.5063,2.8,2.6],[122.2785,2.8,2.6],[124.0506,2.8,2.6],[125.8228,2.8,2.6],[127.5949,2.8,2.6],[129.3671,2.8,2.6],[131.1392,2.8,2.6],[132.9114,2.8,2.6],[134.6835,2.8,2.6],[136.4557,2.8,2.6],[138.2278,2.8,2.6],[140.0,2.8,2.6]],"nib":[130.0,2.8]},"loud_expanded":{"points":[[0.0,5.88,2.6],[5.3165,5.88,2.6],[10.6329,5.88,2.6],[15.9494,5.88,2.6],[21.2658,5.88,2.6],[26.5823,5.88,2.6],[31.8987,5.88,2.6],[37.2152,5.88,2.6],[42.5316,5.88,2.6],[47.8481,5.88,2.6],[53.1646,5.88,2.6],[58.481,5.88,2.6],[63.7975,5.88,2.6],[69.1139,5.88,2.6],[74.4304,5.88,2.6],[79.7468,5.88,2.6],[85.0633,5.88,2.6],[90.3797,5.88,2.6],[95.6962,5.88,2.6],[101.0127,5.88,2.6],[106.3291,5.88,2.6],[111.6456,5.88,2.6],[116.962,5.88,2.6],[122.2785,5.88,2.6],[127.5949,5.88,2.6],[132.9114,5.88,2.6],[138.2278,5.88,2.6],[143.5443,5.88,2.6],[148.8608,5.88,2.6],[154.1772,5.88,2.6],[159.4937,5.88,2.6],[164.8101,5.88,2.6],[170.1266,5.88,2.6],[175.443,5.88,2.6],[180.7595,5.88,2.6],[186.0759,5.88,2.6],[191.3924,5.88,2.6],[196.7089,5.88,2.6],[202.0253,5.88,2.6],[207.3418,5.88,2.6],[212.6582,5.88,2.6],[217.9747,5.88,2.6],[223.2911,5.88,2.6],[228.6076,5.88,2.6],[233.9241,5.88,2.6],[239.2405,5.88,2.6],[244.557,5.88,2.6],[249.8734,5.88,2.6],[255.1899,5.88,2.6],[260.5063,5.88,2.6],[265.8228,5.88,2.6],[271.1392,5.88,2.6],[276.4557,5.88,2.6],[281.7722,5.88,2.6],[287.0886,5.88,2.6],[292.4051,5.88,2.6],[297.7215,5.88,2.6],[303.038,5.88,2.6],[308.3544,5.88,2.6],[313.6709,5.88,2.6],[318.9873,5.88,2.6],[324.3038,5.88,2.6],[329.6203,5.88,2.6],[334.9367,5.88,2.6],[340.2532,5.88,2.6],[345.5696,5.88,2.6],[350.8861,5.88,2.6],[356.2025,5.88,2.6],[361.519,5.88,2.6],[366.8354,5.88,2.6],[372.1519,5.88,2.6],[377.4684,5.88,2.6],[382.7848,5.88,2.6],[388.1013,5.88,2.6],[393.4177,5.88,2.6],[398.7342,5.88,2.6],[404.0506,5.88,2.6],[409.3671,5.88,2.6],[414.6835,5.88,2.6],[420.0,5.88,2.6]],"nib":[410.0,5.88]}},"truncation":[{"text":"hello","max_width":100,"expected":"hello"},{"text":"the quick brown fox jumps over the lazy dog","max_width":120,"expected":"\u2026ver the lazy dog"},{"text":"um so i think that the deadline is the tenth i mean the twelfth","max_width":200,"expected":"\u2026he tenth i mean the twelfth"},{"text":"a very long preview line that will certainly not fit inside the hud","max_width":90,"expected":"\u2026ide the hud"}]}</script>
+<script>
+(function(){
+  "use strict";
+  const FIX = JSON.parse(document.getElementById('fixture').textContent);
+  const C = FIX.constants;
+
+  /* ---------- geometry ported from scribefire/hud_common.py ---------- */
+  function normaliseAmplitude(rms, reference){
+    if (reference === undefined) reference = C.WAVE_REFERENCE_RMS;
+    if (rms === null || rms === undefined) return 0;
+    const value = Number(rms);
+    if (!isFinite(value) || value <= 0) return 0;
+    if (!(reference > 0)) reference = C.WAVE_REFERENCE_RMS;
+    let n = value / reference;
+    if (n > 1) n = 1;
+    return Math.pow(n, 0.65);
+  }
+  function buildWavePoints(rmsBuffer, width, height, samples, reference){
+    if (samples === undefined) samples = C.WAVE_SAMPLES;
+    if (reference === undefined) reference = C.WAVE_REFERENCE_RMS;
+    if (!(width > 0) || !(height > 0)) return [];
+    const values = rmsBuffer.slice(-samples);
+    if (!values.length) return [];
+    const count = values.length;
+    const spacing = width / Math.max(1, samples - 1);
+    const middle = height / 2;
+    const travel = middle * 0.86;
+    const points = [];
+    for (let i = 0; i < count; i++){
+      const distance = (count - 1 - i) * spacing;
+      const x = width - distance;
+      const amplitude = normaliseAmplitude(values[i], reference);
+      const y = middle - amplitude * travel;
+      const thickness = C.WAVE_THICKNESS_MIN + (C.WAVE_THICKNESS_MAX - C.WAVE_THICKNESS_MIN) * amplitude;
+      points.push([x, y, thickness]);
+    }
+    return points;
+  }
+  function nibPosition(rmsBuffer, width, height, reference){
+    if (reference === undefined) reference = C.WAVE_REFERENCE_RMS;
+    const amplitude = rmsBuffer && rmsBuffer.length ? normaliseAmplitude(rmsBuffer[rmsBuffer.length - 1], reference) : 0;
+    const middle = height / 2;
+    const travel = middle * 0.86;
+    return [width - C.NIB_MARGIN, middle - amplitude * travel];
+  }
+  function pulseOpacity(elapsed, period){
+    if (period === undefined) period = C.PROCESSING_PULSE_SECONDS;
+    if (!(period > 0)) return 1;
+    const phase = (elapsed % period) / period;
+    return 0.45 + 0.55 * (0.5 - 0.5 * Math.cos(phase * 2 * Math.PI));
+  }
+  function fadeOpacity(elapsed, duration){
+    if (duration === undefined) duration = C.FADE_OUT_SECONDS;
+    if (!(duration > 0)) return 0;
+    if (elapsed >= duration) return 0;
+    return Math.max(0, 1 - elapsed / duration);
+  }
+  function truncateFromLeft(text, measure, maxWidth, ellipsis){
+    if (ellipsis === undefined) ellipsis = "\u2026";
+    if (!text) return "";
+    if (!(maxWidth > 0)) return "";
+    if (measure(text) <= maxWidth) return text;
+    const ellipsisWidth = measure(ellipsis);
+    if (ellipsisWidth >= maxWidth) return ellipsis;
+    const budget = maxWidth - ellipsisWidth;
+    let low = 0, high = text.length, best = "";
+    while (low <= high){
+      const mid = Math.floor((low + high) / 2);
+      const candidate = mid ? text.slice(text.length - mid) : "";
+      if (mid === 0){ best = candidate; low = mid + 1; continue; }
+      if (measure(candidate) <= budget){ best = candidate; low = mid + 1; }
+      else high = mid - 1;
+    }
+    return best ? (ellipsis + best) : ellipsis;
+  }
+
+  /* ---------- parity check against the Python fixture ---------- */
+  function parity(){
+    let checks = 0, failed = 0;
+    const close = (a, b, tol) => Math.abs(a - b) <= (tol === undefined ? 5e-4 : tol);
+    Object.keys(FIX.expected).forEach(function(key){
+      const parts = key.split('_');
+      const label = parts.pop();
+      const name = parts.join('_');
+      const size = label === 'compact' ? C.COMPACT_SIZE : C.EXPANDED_SIZE;
+      const buf = FIX.buffers[name];
+      const pts = buildWavePoints(buf, size[0], size[1]);
+      const exp = FIX.expected[key];
+      if (pts.length !== exp.points.length){ failed++; return; }
+      for (let i = 0; i < pts.length; i++){
+        checks++;
+        if (!close(pts[i][0], exp.points[i][0]) || !close(pts[i][1], exp.points[i][1]) || !close(pts[i][2], exp.points[i][2])) failed++;
+      }
+      const nib = nibPosition(buf, size[0], size[1]);
+      checks += 2;
+      if (!close(nib[0], exp.nib[0]) || !close(nib[1], exp.nib[1])) failed++;
+    });
+    const measure = function(t){ return t.length * 7.0; };
+    FIX.truncation.forEach(function(t){
+      checks++;
+      if (truncateFromLeft(t.text, measure, t.max_width) !== t.expected) failed++;
+    });
+    return {checks: checks, failed: failed};
+  }
+
+  const parityResult = parity();
+  const badge = document.getElementById('parityBadge');
+  const parityText = document.getElementById('parityText');
+  if (parityResult.failed === 0){
+    badge.classList.add('ok');
+    parityText.textContent = 'hud_common parity \u2713 ' + parityResult.checks + ' checks';
+  } else {
+    badge.classList.add('bad');
+    parityText.textContent = 'geometry mismatch: ' + parityResult.failed + '/' + parityResult.checks;
+  }
+
+  /* ---------- token readout ---------- */
+  function set(id, value){ const el = document.getElementById(id); if (el) el.textContent = value; }
+  set('tSamples', C.WAVE_SAMPLES);
+  set('tRef', C.WAVE_REFERENCE_RMS);
+  set('tFps', C.REDRAW_FPS + ' fps');
+  set('tTextFps', C.TEXT_FPS + ' fps');
+  set('kCompact', C.COMPACT_SIZE[0] + '\u00d7' + C.COMPACT_SIZE[1]);
+  set('kExpanded', C.EXPANDED_SIZE[0] + '\u00d7' + C.EXPANDED_SIZE[1]);
+  set('kRadius', C.CORNER_RADIUS);
+  set('kWave', C.WAVE_HEIGHT_COMPACT + ' / ' + C.WAVE_HEIGHT_EXPANDED);
+  set('kText', C.TEXT_HEIGHT);
+  set('kThick', C.WAVE_THICKNESS_MIN + ' \u2192 ' + C.WAVE_THICKNESS_MAX);
+  set('kRef2', C.WAVE_REFERENCE_RMS);
+  set('kNib', C.NIB_WIDTH + '\u00d7' + C.NIB_HEIGHT);
+  set('kFps', C.REDRAW_FPS + ' fps');
+  set('kTextFps2', C.TEXT_FPS + ' fps');
+  set('kFade', C.FADE_OUT_SECONDS + ' s');
+  set('kPulse', C.PROCESSING_PULSE_SECONDS + ' s');
+
+  (function swatches(){
+    const host = document.getElementById('swatches');
+    const items = [
+      ['Ink', C.INK_COLOR], ['Ink dim', C.INK_DIM_COLOR], ['Nib', C.NIB_COLOR],
+      ['Plate', C.BACKGROUND_COLOR], ['Preview', C.PREVIEW_TEXT_COLOR]
+    ];
+    items.forEach(function(item){
+      const d = document.createElement('div');
+      d.className = 'swatch';
+      const rgb = 'rgb(' + item[1][0] + ',' + item[1][1] + ',' + item[1][2] + ')';
+      const a = (item[1][3] / 255).toFixed(2);
+      d.innerHTML = '<i style="background:' + rgb + ';opacity:' + a + '"></i><b>' + item[0] + '</b>';
+      host.appendChild(d);
+    });
+  })();
+
+  /* ---------- the overlay ---------- */
+  const canvas = document.getElementById('hud');
+  const ctx = canvas.getContext('2d');
+  const SCALE = 2;
+  const stage = document.getElementById('stage');
+
+  let state = 'listening';
+  let source = 'speech';
+  let livePreview = false;
+  let buffer = new Array(C.WAVE_SAMPLES).fill(0);
+  let sampleIndex = 0;
+  let stateStarted = performance.now();
+  let lastFrame = performance.now();
+  let textToShow = '';
+
+  const previewWords = [
+    'the quick brown fox jumps over the lazy dog',
+    'so i think that the deadline is the tenth i mean the twelfth',
+    'write an email to sarah about the delay',
+    'um so anyway the meeting is at three on friday'
+  ];
+  let previewIndex = 0, previewChars = 0, lastTextUpdate = 0;
+
+  function speechSample(t){
+    const envelope = 0.5 + 0.5 * Math.sin(t * 0.55);
+    const syllable = Math.abs(Math.sin(t * 1.7));
+    return 0.011 + envelope * syllable * 0.085;
+  }
+  function nextSample(){
+    if (source === 'silence') return 0;
+    if (source === 'loud') return 0.2;
+    return speechSample(sampleIndex / 20);
+  }
+
+  function resize(){
+    const [w, h] = livePreview ? C.EXPANDED_SIZE : C.COMPACT_SIZE;
+    canvas.width = w * SCALE;
+    canvas.height = h * SCALE;
+    canvas.style.width = (w * SCALE) + 'px';
+    canvas.style.height = (h * SCALE) + 'px';
+    document.getElementById('hudCaption').textContent =
+      w + ' \u00d7 ' + h + ' px \u00b7 bottom-centre \u00b7 shown at 2\u00d7';
+    set('sizeLabel', w + '\u00d7' + h);
+  }
+
+  function rgba(color, alpha){
+    return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + (alpha * (color[3] / 255)).toFixed(4) + ')';
+  }
+
+  function roundedRect(x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function draw(now){
+    const dt = now - lastFrame;
+    const frameMs = 1000 / C.REDRAW_FPS;
+
+    if (dt >= frameMs){
+      const steps = Math.min(6, Math.floor(dt / frameMs));
+      for (let i = 0; i < steps; i++){
+        buffer.shift();
+        buffer.push(nextSample());
+        sampleIndex++;
+      }
+      lastFrame += steps * frameMs;
+    }
+
+    const [W, H] = livePreview ? C.EXPANDED_SIZE : C.COMPACT_SIZE;
+    const waveH = livePreview ? C.WAVE_HEIGHT_EXPANDED : C.WAVE_HEIGHT_COMPACT;
+
+    ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const elapsed = (now - stateStarted) / 1000;
+    let strokeAlpha = 1, nibAlpha = 1, showPlate = true;
+
+    if (state === 'processing'){
+      strokeAlpha = pulseOpacity(elapsed);
+      nibAlpha = 0;                    // the pen lifts away
+    } else if (state === 'done'){
+      const fade = fadeOpacity(elapsed);
+      strokeAlpha = fade;
+      nibAlpha = fade;
+      if (fade <= 0) showPlate = false;
+    }
+    if (!showPlate){
+      canvas.style.opacity = '0';
+    } else {
+      canvas.style.opacity = '1';
+    }
+
+    // the plate
+    ctx.save();
+    roundedRect(0, 0, W, H, C.CORNER_RADIUS);
+    ctx.fillStyle = rgba(C.BACKGROUND_COLOR, 1);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.07)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // the ink stroke: overlapping thick segments with round caps
+    const points = buildWavePoints(buffer, W, waveH);
+    if (points.length > 1){
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (let i = 0; i < points.length - 1; i++){
+        const age = i / (points.length - 1);          // 0 = oldest, 1 = newest
+        const mix = 0.45 + 0.55 * age;
+        const r = Math.round(C.INK_DIM_COLOR[0] + (C.INK_COLOR[0] - C.INK_DIM_COLOR[0]) * mix);
+        const g = Math.round(C.INK_DIM_COLOR[1] + (C.INK_COLOR[1] - C.INK_DIM_COLOR[1]) * mix);
+        const b = Math.round(C.INK_DIM_COLOR[2] + (C.INK_COLOR[2] - C.INK_DIM_COLOR[2]) * mix);
+        ctx.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (strokeAlpha * mix * (C.INK_COLOR[3] / 255)).toFixed(4) + ')';
+        ctx.lineWidth = points[i][2];
+        ctx.beginPath();
+        ctx.moveTo(points[i][0], points[i][1]);
+        ctx.lineTo(points[i + 1][0], points[i + 1][1]);
+        ctx.stroke();
+      }
+    }
+
+    // the pen nib
+    if (nibAlpha > 0.01){
+      const nib = nibPosition(buffer, W, waveH);
+      const s = 1 + 0.18 * normaliseAmplitude(buffer[buffer.length - 1]);
+      const w = C.NIB_WIDTH * s, h = C.NIB_HEIGHT * s;
+      ctx.save();
+      ctx.translate(nib[0], nib[1]);
+      ctx.globalAlpha = nibAlpha;
+      ctx.fillStyle = rgba(C.NIB_COLOR, 1);
+      ctx.beginPath();
+      ctx.moveTo(0, -h / 2);
+      ctx.lineTo(w / 2, h / 2);
+      ctx.lineTo(-w / 2, h / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // the preview line
+    if (livePreview && textToShow){
+      if (now - lastTextUpdate > 1000 / C.TEXT_FPS){
+        lastTextUpdate = now;
+        const phrase = previewWords[previewIndex];
+        previewChars += 1;
+        if (previewChars > phrase.length){
+          previewChars = 0;
+          previewIndex = (previewIndex + 1) % previewWords.length;
+        }
+        textToShow = phrase.slice(0, previewChars);
+      }
+      ctx.save();
+      ctx.font = C.PREVIEW_TEXT_FONT_SIZE + "px Outfit, sans-serif";
+      const measure = function(t){ return ctx.measureText(t).width; };
+      const pad = 12;
+      const visible = truncateFromLeft(textToShow, measure, W - pad * 2);
+      ctx.fillStyle = rgba(C.PREVIEW_TEXT_COLOR, 1);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(visible, pad, waveH + C.TEXT_HEIGHT / 2);
+      ctx.restore();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  /* ---------- controls ---------- */
+  function segment(id, attr, onPick){
+    const host = document.getElementById(id);
+    host.addEventListener('click', function(e){
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      Array.prototype.forEach.call(host.querySelectorAll('button'), function(b){
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      onPick(btn.dataset[attr]);
+    });
+  }
+  segment('stateSeg', 'state', function(v){
+    state = v;
+    stateStarted = performance.now();
+    if (v === 'listening'){
+      buffer = new Array(C.WAVE_SAMPLES).fill(0);
+    }
+  });
+  segment('srcSeg', 'src', function(v){ source = v; });
+  segment('bgSeg', 'bg', function(v){
+    const dark = v === 'dark';
+    stage.classList.toggle('dark', dark);
+    document.getElementById('stageLabel').textContent = dark ? 'DARK BACKGROUND' : 'LIGHT BACKGROUND';
+  });
+
+  const previewToggle = document.getElementById('previewToggle');
+  previewToggle.addEventListener('click', function(){
+    livePreview = !livePreview;
+    previewToggle.setAttribute('aria-pressed', String(livePreview));
+    resize();
+  });
+
+  resize();
+  requestAnimationFrame(draw);
+
+  /* ---------- settings window behaviour ---------- */
+  const inputs = ['f-preroll', 'f-groq', 'f-ollama', 'f-key'].map(function(id){ return document.getElementById(id); });
+  const toggles = Array.prototype.slice.call(document.querySelectorAll('[data-toggle]'));
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const dirtyLabel = document.getElementById('dirtyLabel');
+  const savedToast = document.getElementById('savedToast');
+  let dirty = false;
+  let toastTimer = null;
+
+  function setDirty(value){
+    dirty = value;
+    saveBtn.disabled = !value;
+    cancelBtn.disabled = !value;
+    dirtyLabel.classList.toggle('on', value);
+  }
+  inputs.forEach(function(el){ el.addEventListener('input', function(){ setDirty(true); }); });
+  toggles.forEach(function(el){
+    el.addEventListener('click', function(){
+      el.setAttribute('aria-pressed', String(el.getAttribute('aria-pressed') !== 'true'));
+      setDirty(true);
+    });
+  });
+  setDirty(false);
+
+  saveBtn.addEventListener('click', function(){
+    setDirty(false);
+    savedToast.classList.add('on');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ savedToast.classList.remove('on'); }, 2000);
+  });
+  cancelBtn.addEventListener('click', function(){
+    setDirty(false);
+    savedToast.classList.remove('on');
+  });
+
+  const testBtn = document.getElementById('testBtn');
+  const testResult = document.getElementById('testResult');
+  testBtn.addEventListener('click', function(){
+    testResult.textContent = 'checking\u2026';
+    setTimeout(function(){
+      testResult.textContent = 'unauthorized \u2014 check the API key';
+      setDirty(true);
+    }, 700);
+  });
+})();
+</script>
+</body>
+</html>
