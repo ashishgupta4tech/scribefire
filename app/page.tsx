@@ -16,7 +16,7 @@ export default function Home() {
     <main id="top" className="relative min-h-screen overflow-x-clip bg-transparent text-[var(--fg)]">
       <Nav />
 
-      {/* Hero — the birds own this section; everything above sits at z-10. */}
+      {/* Hero â€” the birds own this section; everything above sits at z-10. */}
       <section className="relative min-h-screen overflow-hidden px-5 pt-32 pb-12">
         <BirdsBackground
           quantity={3}
@@ -41,7 +41,7 @@ export default function Home() {
 
             <p className="mt-8 max-w-lg text-lg font-light leading-relaxed text-[var(--fg-muted)]">
               Scribefire turns your voice into clean, formatted writing, in any app on your
-              machine. Hold a key, say what you mean, let go. No tab switching. No cleanup.
+              machine. Hold a key, say what you mean, let go. No tab switching. No cleanup. CLONE-PROBE-4412
             </p>
 
             <div className="mt-10 flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -138,7 +138,7 @@ export default function Home() {
               Scribe<span className="text-[var(--accent)]">fire</span>
             </span>
           </span>
-          <span>© {new Date().getFullYear()} Scribefire. All rights reserved.</span>
+          <span>Â© {new Date().getFullYear()} Scribefire. All rights reserved.</span>
         </div>
       </footer>
     </main>
